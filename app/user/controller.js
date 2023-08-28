@@ -91,10 +91,39 @@ const updateUser = async (req, res) => {
       res.status(500).json({ error: 'Error updating user article.' });
     }
   };
+  const getAllUsersWithRoleUser = async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1; 
+      const limit = 10;
+      const searchQuery = req.query.search || '';
+
+      const totalUser = await User.countDocuments({
+        full_name: { $regex: searchQuery, $options: 'i' },
+      });
+      const totalPages = Math.ceil(totalUser / limit);
+      const users = await User.find({
+        full_name: { $regex: searchQuery, $options: 'i' },
+        role: 'user'
+      }).select('-password -createdAt -updatedAt -token -role -_id')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+     
+  
+      if (users.length === 0) {
+        return res.status(404).json({ error: 'Tidak ada pengguna dengan peran "user".' });
+      }
+  
+      res.status(200).json({ data:users, totalPages });
+    } catch (error) {
+      res.status(500).json({ error: 'Terjadi kesalahan saat mengambil data pengguna.' });
+    }
+  };
   
   module.exports = {
     updateUser,
     getUserByToken,
-    updatePhotoUser
+    updatePhotoUser,
+    getAllUsersWithRoleUser
   };
   
